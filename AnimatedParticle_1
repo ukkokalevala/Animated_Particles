@@ -1,0 +1,62 @@
+#include <Wire.h>
+#include <Adafruit_GFX.h>
+#include <Adafruit_SSD1306.h>
+
+#define SCREEN_WIDTH 128
+#define SCREEN_HEIGHT 64
+#define OLED_RESET    -1
+#define SOUND_SENSOR_PIN 4  // Sound sensor on GPIO2
+#define SDA_PIN 7  // OLED SDA
+#define SCL_PIN 6  // OLED SCL
+
+TwoWire I2C_ESP32C3 = TwoWire(0);
+Adafruit_SSD1306 display(SCREEN_WIDTH, SCREEN_HEIGHT, &I2C_ESP32C3, OLED_RESET);
+
+const int numParticles = 20; // Number of particles
+struct Particle {
+    float x, y;
+    float speed;
+    float frequency;
+};
+
+Particle particles[numParticles];
+
+void setup() {
+    Serial.begin(115200);
+    I2C_ESP32C3.begin(SDA_PIN, SCL_PIN, 100000);
+
+    if (!display.begin(SSD1306_SWITCHCAPVCC, 0x3C)) {
+        Serial.println("SSD1306 allocation failed");
+        for (;;);
+    }
+
+    // Initialize particles with random positions and speeds
+    for (int i = 0; i < numParticles; i++) {
+        particles[i].x = random(0, SCREEN_WIDTH);
+        particles[i].y = random(SCREEN_HEIGHT / 2, SCREEN_HEIGHT);
+        particles[i].speed = random(1, 5) / 10.0;  // Random speed factor
+        particles[i].frequency = random(5, 15) / 10.0;  // Different movement speeds
+    }
+
+    display.clearDisplay();
+    display.display();
+}
+
+void loop() {
+    int soundValue = analogRead(SOUND_SENSOR_PIN);
+    int intensity = map(soundValue, 0, 4095, 1, 5); // Controls particle size
+
+    display.clearDisplay();
+
+    // Update and draw particles
+    for (int i = 0; i < numParticles; i++) {
+        particles[i].y += sin(millis() * particles[i].frequency * 0.001) * particles[i].speed * intensity;
+        if (particles[i].y < 0) particles[i].y = SCREEN_HEIGHT;
+        if (particles[i].y > SCREEN_HEIGHT) particles[i].y = 0;
+
+        display.fillCircle(particles[i].x, particles[i].y, intensity, SSD1306_WHITE);
+    }
+
+    display.display();
+    delay(30);
+}
