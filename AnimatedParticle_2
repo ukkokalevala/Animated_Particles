@@ -44,7 +44,7 @@ void setup() {
 
 void loop() {
   int soundValue = analogRead(SOUND_SENSOR_PIN);
-  float soundLevel = map(soundValue, 0, 4095, 0, 100) / 100.0;
+  float soundLevel = map(soundValue, 0, 4095, 1, 5);
 
   display.clearDisplay();
 
